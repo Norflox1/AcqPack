@@ -1,32 +1,30 @@
-import utils as ut
+from . import utils as ut
 
 import os
 import time
 import yaml
 from ctypes import *
-
+import ctypes
 
 DLL_FILENAME = 'mfcs_64.dll'  # dll packaged with acqpack (todo: 'package resources')
 DLL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), DLL_FILENAME)
-# TODO: 
-# - config file vs chanmap_path
-# - which device
-# - kwargs/channel default in read, set, pid?
+
 class Mfcs:
     """
     Class to control the MFCS-EZ.
     """
     def __init__(self, config_file, chanmap_path):
-        
         with open(config_file) as file:
             self.config = yaml.full_load(file)
-        
+        	# Variable types definition 
         self.config['conversion_to_mbar'] = float(self.config['conversion_to_mbar'])  # ensure conversion factor is float
         self.dll = cdll.LoadLibrary(DLL_PATH)  # load dll (i.e. MFCS API)
         self.c_status = c_char()  # placeholder for status
         self.c_serial = c_ushort(0)  # placeholder for serial number
         
-        # self.detect()
+        
+        self.config['serial_number'] = 626
+        print(self.detect())
         self.connect()
         self.load_chanmap(chanmap_path)
 
@@ -41,6 +39,7 @@ class Mfcs:
         """
         c_table = (c_ushort*8)(0,0,0,0,0,0,0,0)
         c_error = self.dll.mfcsez_detect(byref(c_table))
+
         return [sn for sn in c_table if sn != 0]
 
     def connect(self):
@@ -48,10 +47,16 @@ class Mfcs:
         Initializes the MFCS.
         Makes connection, checks status, and sets the PID alpha parameter of all channels to 2.
         """
+        self.handle = c_ulong(0)
         self.handle = self.dll.mfcsez_initialisation(self.config['serial_number'])
-        time.sleep(0.6)  # wait to check serial
+        print(self.config['serial_number'])
+        print(self.c_serial)
+        print(self.handle)
+
+        time.sleep(5)  # wait to check serial
         c_error = self.dll.mfcs_get_serial(self.handle, byref(self.c_serial))
-        
+        # c_error = 599
+        print('here 1')
         if self.c_serial.value == 0:  # serial==0 means no connection
             print('Error: Could not connect to MFCS')
             self.exit()
@@ -65,7 +70,9 @@ class Mfcs:
             time.sleep(0.1)
             if s != 1:
                 print('Warning: Connected to MFCS, but status not normal. Status {}: {}'.format(s, status))
-            
+
+        print('here')
+
     def status(self):
         """
         Gets and returns status of the MFCS.
@@ -123,7 +130,7 @@ class Mfcs:
             windll.kernel32.FreeLibrary(self.dll._handle) # Release the DLL
             del self.dll
             print('MFCS library released')
-        
+    
     def set(self, lookup_cols, lookup_vals, pressure=0.0):
         """
         Sets pressure of specified channel.

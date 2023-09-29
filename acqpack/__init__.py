@@ -4,14 +4,13 @@
 
 __author__ = """Scott Longwell"""
 __email__ = 'longwell@stanford.edu'
-__version__ = '1.2.0'
+__version__ = '1.1.1'
 
-import gui
-import utils
-from log import Log
-from asicontroller import AsiController
-from autosampler import Autosampler
-from fractioncollector import FractionCollector
-from manifold import Manifold
-from mfcs import Mfcs
-from motor import Motor
+from . import gui
+from . import utils
+from .asicontroller import AsiController
+from .autosampler import Autosampler
+from .fractioncollector import FractionCollector
+from .manifold import Manifold
+from .mfcs import Mfcs
+from .motor import Motor

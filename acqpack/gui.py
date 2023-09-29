@@ -27,19 +27,18 @@ def snap(core, mode='mpl'):
     def on_snap_mpl(b):
         core.snapImage()
         img = core.getImage()
-        plt.imshow(img, cmap='gray', vmin=0, vmax=2**core.getImageBitDepth()-1)
+        plt.imshow(img, cmap='gray')
         plt.show()
 
     def on_snap_cv2(b):
         cv2.destroyWindow('Snap')
         cv2.namedWindow('Snap', cv2.WINDOW_NORMAL)
-        cv2.resizeWindow('Snap', core.getImageWidth()*500/core.getImageHeight(), 500)
+        cv2.resizeWindow('Snap', 500, 500)
         cv2.setWindowProperty('Snap', cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_KEEPRATIO)
         core.snapImage()
         time.sleep(.1)
         img = core.getImage()
-        img8 = (img.astype(float)/(2**core.getImageBitDepth()-1) * 255).astype(np.uint8)
-        cv2.imshow('Snap', img8)
+        cv2.imshow('Snap', img)
         k = cv2.waitKey(30)
 
     def on_close_cv2(b):
@@ -67,24 +66,23 @@ def video(core, loop_pause=0.15):
 
     def on_live(b):
         display.clear_output(wait=True)
-        print 'LIVE'
+        print('LIVE')
         core.startContinuousSequenceAcquisition(1000)  # time overridden by exposure
         time.sleep(.2)
         cv2.namedWindow('Video', cv2.WINDOW_NORMAL)
         cv2.setWindowProperty('Video', cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_KEEPRATIO)
-        cv2.resizeWindow('Video', core.getImageWidth()*500/core.getImageHeight(), 500)
-        img = np.zeros((core.getImageWidth()*500/core.getImageHeight(), 500))
-        print 'To stop, click window + press ESC'
+        cv2.resizeWindow('Video', 500, 500)
+        img = np.zeros((500, 500))
+        print('To stop, click window + press ESC')
         while 1:
             time.sleep(loop_pause)
             if core.getRemainingImageCount() > 0:
                 img = core.getLastImage()
-                img8 = (img.astype(float)/(2**core.getImageBitDepth()-1) * 255).astype(np.uint8)
-            cv2.imshow('Video', img8)
+            cv2.imshow('Video', img)
             k = cv2.waitKey(30)
             if k == 27:  # ESC key; may need 255 mask?
                 break
-        print 'STOPPED'
+        print('STOPPED')
         core.stopSequenceAcquisition()
 
     def on_close(b):
@@ -139,14 +137,14 @@ def grid(core, loop_pause=0.15):
 
     def on_live(b):
         display.clear_output(wait=True)
-        print 'LIVE'
+        print('LIVE')
         core.startContinuousSequenceAcquisition(1000)  # time overridden by exposure
         time.sleep(.2)
         cv2.namedWindow('Video', cv2.WINDOW_NORMAL)
         cv2.setWindowProperty('Video', cv2.WND_PROP_ASPECT_RATIO, cv2.WINDOW_KEEPRATIO)
         cv2.resizeWindow('Video', 500, 500)
         img = np.zeros((500, 500))
-        print 'To stop, click window + press ESC'
+        print('To stop, click window + press ESC')
         while 1:
             time.sleep(loop_pause)
             if core.getRemainingImageCount() > 0:
@@ -155,7 +153,7 @@ def grid(core, loop_pause=0.15):
             k = cv2.waitKey(30)
             if k == 27:  # ESC key; may need 255 mask?
                 break
-        print 'STOPPED'
+        print('STOPPED')
         core.stopSequenceAcquisition()
 
     def on_close(b):
@@ -166,7 +164,7 @@ def grid(core, loop_pause=0.15):
     def on_corner(b):
         pos = core.get_xy()
         b.owner.value = pos
-        print pos
+        print(pos)
 
     live = widgets.Button(description='Live')
     close = widgets.Button(description='Close')
@@ -190,7 +188,7 @@ def grid(core, loop_pause=0.15):
 
 # --------------------------------------------------------------------
 # MANIFOLD -----------------------------------------------------------
-def manifold_control(manifold, button_col='name', trim_to_valvemap=True):
+def manifold_control(manifold, button_col='name'):
     def on_clicked(b):
         if b.new == True:  # keep this (b.new == True)
             manifold.depressurize(b.owner.valve)
@@ -202,22 +200,9 @@ def manifold_control(manifold, button_col='name', trim_to_valvemap=True):
     def sync(b):
         for button in button_list:
             button.value = manifold.read_valve(button.valve)
-    
-    min_bank = 0
-    max_bank = 5
-    if trim_to_valvemap:
-        min_bank = (manifold.valvemap[button_col]
-                    .replace(r'^\s*$', np.nan, regex=True)
-                    .dropna()
-                    .index.min()//8)
-        max_bank = (manifold.valvemap[button_col]
-                    .replace(r'^\s*$', np.nan, regex=True)
-                    .dropna()
-                    .index.max()//8)
-
 
     button_list = []
-    for i in range(min_bank, 8*(max_bank+1)):
+    for i in range(48):
         desc = '{} . . . {}'.format(i, manifold.valvemap[button_col][i])
         button_list.append(
             widgets.ToggleButton(
@@ -231,7 +216,7 @@ def manifold_control(manifold, button_col='name', trim_to_valvemap=True):
         button.observe(on_clicked)
 
     bank_list = []
-    for i in range(min_bank, 8*(max_bank+1), 8):
+    for i in range(0, 48, 8):
         bank_list.append(
             widgets.VBox(button_list[i:i + 8][::-1])
         )
@@ -239,7 +224,7 @@ def manifold_control(manifold, button_col='name', trim_to_valvemap=True):
     sync_button = widgets.Button(icon='fa-retweet', button_style='success', layout=widgets.Layout(width='40px'))
     sync_button.on_click(sync)
     display.display(widgets.HBox(bank_list + [sync_button]))
-    display.display(widgets.Label('DARK:  De-Pressurized, Open', layout=widgets.Layout(width='300px')), widgets.Label('LIGHT: Pressurized,    Closed', layout=widgets.Layout(width='300px')))
+    display.display(widgets.Label('Dark = De-Pressurized / Open', layout=widgets.Layout(width='300px')))
 
     
 # --------------------------------------------------------------------
@@ -368,14 +353,14 @@ def stage_control(stage):
 
     # functions ------------------------------------------------------------
     def print_pos():
-        display.clear_output(wait=True)
+        display.clear_output()
         where = tuple()
         for w in where_functions:
             where += w()
         where += (1,)  # add 'w' before affine
-        for name, frame in stage.frames.iteritems():
+        for name, frame in list(stage.frames.items()):
             coords = tuple(np.dot(where, np.linalg.inv(frame.trans)))
-            print '(' + ', '.join(format(p, '.3f') for p in coords[:-1]) + ')', name
+            print(('(' + ', '.join(format(p, '.3f') for p in coords[:-1]) + ')', name))
 
     def move(b):
         if b.ax == 'x':

@@ -15,7 +15,7 @@ class Motor:
         self.serial = s.Serial()  # placeholder
 
         f = open(config_file, 'r')
-        self.config = yaml.full_load(f)
+        self.config = yaml.load(f, Loader=yaml.SafeLoader)
         f.close()
 
         self.config['conv'] = float(self.config['conv'])
@@ -68,7 +68,7 @@ class Motor:
         """
         if velocity > self.config['velocity_limit']:
             velocity = self.config['velocity_limit']
-            print 'ERR: Desired velocity exceeds velocity_limit; velocity now set to velocity_limit'
+            print('ERR: Desired velocity exceeds velocity_limit; velocity now set to velocity_limit')
 
         cmd_string = 'V{}R'.format(velocity)
         return self.cmd(cmd_string)
@@ -105,12 +105,12 @@ class Motor:
 
         if ustep > self.config['ustep_max']:
             ustep = self.config['ustep_max']
-            print 'ERR: Desired move to {} mm exceeds max of {} mm; moving to max instead'.format(mm, self.config[
-                'ustep_max'] / self.config['conv'])
+            print('ERR: Desired move to {} mm exceeds max of {} mm; moving to max instead'.format(mm, self.config[
+                'ustep_max'] / self.config['conv']))
         if ustep < self.config['ustep_min']:
             ustep = self.config['ustep_min']
-            print 'ERR: Desired move to {} mm exceeds min of {} mm; moving to min instead'.format(mm, self.config[
-                'ustep_min'] / self.config['conv'])
+            print('ERR: Desired move to {} mm exceeds min of {} mm; moving to min instead'.format(mm, self.config[
+                'ustep_min'] / self.config['conv']))
 
         cmd_string = 'A{}R'.format(ustep)
 
@@ -137,7 +137,7 @@ class Motor:
         response = str(self.cmd(cmd_string))
         strt = response.rfind('`') + 1
         for end, c in enumerate(response[strt:]):
-            if c not in str(range(0, 11)):
+            if c not in str(list(range(0, 11))):
                 break
         ustep = response[strt:strt + end]
         return round(float(ustep) / self.config['conv'], 4),  # tuple

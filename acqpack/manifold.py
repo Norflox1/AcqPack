@@ -1,6 +1,6 @@
-from pymodbus.client.sync import ModbusTcpClient
+from pymodbus.client import ModbusTcpClient
 
-import utils as ut
+from . import utils as ut
 
 
 class Manifold:

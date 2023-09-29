@@ -20,7 +20,7 @@ class AsiController:
         self.serial = s.Serial()  # placeholder
         
         f = open(config_file, 'r')
-        self.config = yaml.full_load(f)
+        self.config = yaml.load(f, Loader=yaml.FullLoader)
         f.close()
         
         self.config['conv'] = float(self.config['conv'])
@@ -112,7 +112,7 @@ class AsiController:
             assert(abs(x_dir)==1 and abs(y_dir)==1)
             OVERLOAD = 1000.0
             OFFSET = 0.2
-            print "Seeking limits x:{} y:{}".format(x_dir, y_dir)
+            print("Seeking limits x:{} y:{}".format(x_dir, y_dir))
             self.goto_xy(x_dir*OVERLOAD, y_dir*OVERLOAD)  # move to hall-effect limits
             self.move_relative_xy(-x_dir*OFFSET, -y_dir*OFFSET)  # nudge off switch limits
 

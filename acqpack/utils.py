@@ -20,7 +20,7 @@ def read_delim(filepath):
     reader = csv.reader(f, dialect)
 
     if has_header:
-        reader.next()
+        next(reader)
 
     ret = [line for line in reader]
     return ret
@@ -106,40 +106,33 @@ def generate_position_table(num_rc, space_rc, offset=(0.0,0.0,0.0), to_clipboard
 
 
 def spacing(num_rc, p1, p2):
-    r, c = map(float, num_rc)
+    r, c = list(map(float, num_rc))
     return tuple(abs(np.nan_to_num(np.subtract(p2, p1) / (c - 1, r - 1))))
 
 
 def load_mm_positionlist(filepath):
     """
-    Takes a MicroManager position list and converts it to a pandas DataFrame. Will load z-coordinates if
-    available.
+    Takes a MicroManager position list and converts it to a pandas DataFrame.
 
     :param filepath: (str)
-    :return: (DataFrame) position list with headers = "r, c, name, x, y, [z]"
+    :return: (DataFrame) position list with headers = "r, c, name, x, y"
     """
     with open(filepath) as f:
         data = json.load(f)
-        
-    df_rcn = pd.io.json.json_normalize(data, ['POSITIONS'])[['GRID_ROW', 'GRID_COL', 'LABEL']]
-    df_pos = pd.io.json.json_normalize(data, ['POSITIONS', 'DEVICES'])[['DEVICE', 'X', 'Y']]
 
-    df_xy = df_pos.query("DEVICE=='XYStage'")[['X','Y']].reset_index(drop=True)
-    df = pd.concat([df_rcn,df_xy], axis=1)
-
-    # check for z-axis
-    ds_z = df_pos.query("DEVICE=='ZStage'")['X'].reset_index(drop=True)
-    if len(ds_z)>0:
-        df['z'] = ds_z
+    df1 = pd.io.json.json_normalize(data, ['POSITIONS']).drop(
+        ['DEFAULT_XY_STAGE', 'DEFAULT_Z_STAGE', 'DEVICES', 'PROPERTIES'], 1)
+    df1 = df1[['GRID_ROW', 'GRID_COL', 'LABEL']]
+    df2 = pd.io.json.json_normalize(data, ['POSITIONS', 'DEVICES']).drop(['DEVICE', 'AXES', 'Z'], 1)
+    df = pd.concat([df1, df2], axis=1)
 
     rename = {'GRID_ROW': 'r',
               'GRID_COL': 'c',
               'LABEL': 'name',
               'X': 'x',
               'Y': 'y'}
-    df.rename(columns=rename, inplace=True)
 
-    return df
+    return df.rename(columns=rename)
 
 
 def generate_grid(c0, c1, l_img, p):
@@ -164,9 +157,9 @@ def generate_grid(c0, c1, l_img, p):
     # could also use cartesian product (itertools.product OR np.mgrid, stack)
     # https://stackoverflow.com/questions/1208118/using-numpy-to-build-an-array-of-all-combinations-of-two-arrays
     position_list = pd.DataFrame(columns=['r', 'c', 'name', 'x', 'y'], )
-    for j in xrange(n[1]):  # iter y
+    for j in range(n[1]):  # iter y
         y = sign[1] * j * l_img * (1 - p) + c0[1]
-        for i in xrange(n[0]) if not (j % 2) else reversed(xrange(n[0])):  # iter x (serp)
+        for i in range(n[0]) if not (j % 2) else reversed(range(n[0])):  # iter x (serp)
             x = sign[0] * i * l_img * (1 - p) + c0[0]
 
             r = j
